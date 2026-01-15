@@ -1,0 +1,89 @@
+scalar Time
+
+# 设备类型枚举
+enum DeviceType {
+  SENSOR    # 传感器
+  ACTUATOR  # 执行器
+}
+
+# 硬件设备定义
+type Device {
+  id: ID!
+  name: String!
+  type: DeviceType!
+  category: String! # 例如: "temperature", "water_valve"
+  description: String
+  isOnline: Boolean!
+  currentValue: Float # 传感器读数 或 执行器状态(0/1)
+  lastUpdated: Time
+}
+
+# 传感器历史数据
+type SensorData {
+  id: ID!
+  deviceId: ID!
+  value: Float!
+  timestamp: Time!
+}
+
+# 系统日志（包含AI决策日志）
+type SystemLog {
+  id: ID!
+  level: String! # INFO, WARN, ACTION
+  message: String!
+  source: String! # "AI", "SYSTEM", "USER"
+  createdAt: Time!
+}
+
+# AI 聊天消息
+type ChatMessage {
+  role: String! # "user", "assistant"
+  content: String!
+  timestamp: Time!
+}
+
+type Query {
+  # 获取所有设备
+  devices: [Device!]!
+  # 获取指定传感器的历史数据
+  sensorHistory(deviceId: ID!, limit: Int): [SensorData!]!
+  # 获取系统日志
+  logs(limit: Int): [SystemLog!]!
+  # 获取与 AI 的对话历史
+  chatHistory: [ChatMessage!]!
+}
+
+type Mutation {
+  # 配置/注册新设备
+  registerDevice(input: RegisterDeviceInput!): Device!
+  # 更新设备信息
+  updateDevice(id: ID!, input: UpdateDeviceInput!): Device!
+  
+  # 发送消息给 AI (触发 AI 分析并可能产生硬件调用)
+  chatWithAI(message: String!): String!
+  
+  # 人工手动控制执行器
+  controlActuator(deviceId: ID!, value: Float!): Boolean!
+  
+  # 模拟传感器数据上传 (通常硬件用HTTP REST，但这里提供GQL接口备用)
+  pushSensorData(deviceId: ID!, value: Float!): Boolean!
+}
+
+type Subscription {
+  # 实时日志推送
+  logAdded: SystemLog!
+  # 设备状态变更推送（开关状态或数值更新）
+  deviceUpdated: Device!
+}
+
+input RegisterDeviceInput {
+  name: String!
+  type: DeviceType!
+  category: String!
+  description: String
+}
+
+input UpdateDeviceInput {
+  name: String
+  description: String
+}
